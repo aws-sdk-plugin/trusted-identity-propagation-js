@@ -1,0 +1,36 @@
+{
+  "name": "@aws-sdk-plugin/trusted-identity-propagation-js",
+  "version": "1.0.0-alpha",
+  "description": "AWS credential provider that sources credentials that obtains identity-aware credentials for trusted identity propagation",
+  "main": "./dist-cjs/index.js",
+  "module": "./dist-es/index.js",
+  "types": "./dist-types/index.d.ts",
+  "scripts": {
+    "build": "npm run build:cjs && npm run build:es && npm run build:types",
+    "build:cjs": "tsc -p tsconfig.cjs.json",
+    "build:es": "tsc -p tsconfig.es.json",
+    "build:types": "tsc -p tsconfig.types.json",
+    "clean": "node -e \"['dist-cjs','dist-es','dist-types'].forEach(dir => fs.rmSync(dir, { recursive: true, force: true }))\"",
+    "lint": "biome lint --write",
+    "format": "biome format --write"
+  },
+  "keywords": [
+    "aws",
+    "credentials"
+  ],
+  "author": {
+    "name": "AWS IAM Identity Center Team",
+    "url": "https://aws.amazon.com/iam/identity-center"
+  },
+  "files": [
+    "dist-*/**"
+  ],
+  "license": "Apache-2.0",
+  "engines": {
+    "node": ">=18.18.0"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "1.9.4",
+    "typescript": "^5.7.3"
+  }
+}

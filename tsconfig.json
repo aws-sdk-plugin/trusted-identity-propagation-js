@@ -1,0 +1,10 @@
+{
+  "compilerOptions": {
+    "baseUrl": ".",
+    "noFallthroughCasesInSwitch": true,
+    "removeComments": true,
+    "useUnknownInCatchVariables": false
+  },
+  "include": ["src/"],
+  "exclude": ["node_modules/", "**.spec.ts"]
+}
