@@ -1,6 +1,7 @@
 {
   "compilerOptions": {
     "baseUrl": ".",
+    "lib": ["ES2015"],
     "skipLibCheck": true,
     "noFallthroughCasesInSwitch": true,
     "removeComments": true,
