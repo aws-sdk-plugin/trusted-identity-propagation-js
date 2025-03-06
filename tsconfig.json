@@ -1,6 +1,7 @@
 {
   "compilerOptions": {
     "baseUrl": ".",
+    "skipLibCheck": true,
     "noFallthroughCasesInSwitch": true,
     "removeComments": true,
     "useUnknownInCatchVariables": false

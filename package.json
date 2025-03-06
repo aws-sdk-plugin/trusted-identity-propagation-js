@@ -12,7 +12,9 @@
     "build:types": "tsc -p tsconfig.types.json",
     "clean": "node -e \"['dist-cjs','dist-es','dist-types'].forEach(dir => fs.rmSync(dir, { recursive: true, force: true }))\"",
     "lint": "biome lint --write",
-    "format": "biome format --write"
+    "format": "biome format --write",
+    "test": "vitest run",
+    "test:watch": "vitest watch"
   },
   "keywords": [
     "aws",
@@ -31,6 +33,7 @@
   },
   "devDependencies": {
     "@biomejs/biome": "1.9.4",
-    "typescript": "^5.7.3"
+    "typescript": "^5.7.3",
+    "vitest": "^3.0.8"
   }
 }
