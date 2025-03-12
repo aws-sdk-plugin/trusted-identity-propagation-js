@@ -4,7 +4,6 @@
     "outDir": "dist-cjs",
     "rootDir": "src",
     "module": "commonjs",
-    "moduleResolution": "node",
-    "resolveJsonModule": true
+    "moduleResolution": "node"
   }
 }

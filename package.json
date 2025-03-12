@@ -33,11 +33,15 @@
   },
   "dependencies": {
     "@aws-sdk/client-sso-oidc": "^3.0.0",
-    "@aws-sdk/client-sts": "^3.0.0"
+    "@aws-sdk/client-sts": "^3.0.0",
+    "@smithy/property-provider": "^4.0.1",
+    "jwt-decode": "^4.0.0"
   },
   "devDependencies": {
     "@aws-sdk/types": "^3.0.0",
     "@biomejs/biome": "1.9.4",
+    "@faker-js/faker": "^9.5.0",
+    "jsonwebtoken": "^9.0.2",
     "typescript": "^5.7.3",
     "vitest": "^3.0.8"
   }

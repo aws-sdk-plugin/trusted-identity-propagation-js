@@ -9,7 +9,7 @@
     "indentStyle": "space",
     "indentWidth": 4,
     "lineWidth": 120,
-    "include": ["./src/**/*.ts", "*.md"]
+    "include": ["**/*.ts", "*.md"]
   },
   "linter": {
     "rules": {

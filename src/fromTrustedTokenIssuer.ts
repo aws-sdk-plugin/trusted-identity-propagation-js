@@ -1,10 +1,18 @@
 import type { SSOOIDCClient } from '@aws-sdk/client-sso-oidc';
-import type { STSClient } from '@aws-sdk/client-sts';
+import { STSClient } from '@aws-sdk/client-sts';
+import { AssumeRoleCommand } from '@aws-sdk/client-sts';
 import type { CredentialProviderOptions, RuntimeConfigAwsCredentialIdentityProvider } from '@aws-sdk/types';
+import { CredentialsProviderError } from '@smithy/property-provider';
+import { jwtDecode } from 'jwt-decode';
+
+import { IDC_CONTEXT_PROVIDER_ARN, PACKAGE_NAME } from './constants';
+import { getIdentityEnhancedSessionName } from './helpers';
+import { resolveSsoOidcClient } from './resolveSsoOidcClient';
+import { retrieveSsoOidcTokens } from './retrieveSsoOidcTokens';
 
 export interface FromTrustedTokenIssuerProps extends CredentialProviderOptions {
     /**
-     * A function that the customer implements which obtains an OpenID token
+     * A function that the customer implements which obtains an JSON web token
      * from their external identity provider.
      */
     webTokenProvider: () => Promise<string>;
@@ -49,16 +57,76 @@ export interface FromTrustedTokenIssuerProps extends CredentialProviderOptions {
 export const fromTrustedTokenIssuer = (
     init: FromTrustedTokenIssuerProps
 ): RuntimeConfigAwsCredentialIdentityProvider => {
-    return async () => {
-        // @ts-expect-error
-        console.log(init);
+    let ssoOidcRefreshToken: string | undefined = undefined;
 
-        // NOTE: Setting blank values for now until actual plugin implementation.
+    return async ({ callerClientConfig }) => {
+        const logger = init.logger ?? callerClientConfig.logger;
+        logger?.debug(`${PACKAGE_NAME} - fromTrustedTokenIssuer`);
+
+        const { webTokenProvider, applicationRoleArn, accessRoleArn, applicationArn } = init;
+        const region = await callerClientConfig.region();
+
+        if (!webTokenProvider || !accessRoleArn || !applicationArn) {
+            throw new CredentialsProviderError(
+                'Incomplete configuration. The fromTrustedTokenIssuer() argument hash must include ' +
+                    '"webTokenProvider", "accessRoleArn", "applicationArn"',
+                { logger, tryNextLink: false }
+            );
+        }
+
+        let webToken: string | undefined = undefined;
+        if (!init.ssoOidcClient) {
+            webToken = await webTokenProvider();
+        }
+
+        const ssoOidcClient =
+            init.ssoOidcClient ||
+            (await resolveSsoOidcClient({
+                webToken,
+                applicationRoleArn: applicationRoleArn || accessRoleArn,
+                applicationArn,
+                region,
+                logger,
+            }));
+
+        const idcTokens = await retrieveSsoOidcTokens({
+            webTokenProvider: async () => webToken || webTokenProvider(),
+            ssoOidcClient,
+            ssoOidcRefreshToken,
+            applicationArn,
+        });
+
+        ssoOidcRefreshToken = idcTokens.refreshToken;
+
+        // TODO: To be removed. We are going to get `sts:identity_context` from the response of `CreateTokenWithIAM`.
+        const parsedIdcTokens = jwtDecode(idcTokens.idToken);
+
+        const stsClient =
+            init.stsClient ||
+            new STSClient({
+                credentials: ssoOidcClient.config.credentials,
+                region,
+                logger,
+            });
+
+        const { Credentials: tipTokens } = await stsClient.send(
+            new AssumeRoleCommand({
+                RoleArn: accessRoleArn,
+                RoleSessionName: getIdentityEnhancedSessionName(applicationArn),
+                ProvidedContexts: [
+                    {
+                        ProviderArn: IDC_CONTEXT_PROVIDER_ARN,
+                        ContextAssertion: parsedIdcTokens['sts:identity_context'],
+                    },
+                ],
+            })
+        );
+
         return {
-            accessKeyId: '',
-            secretAccessKey: '',
-            sessionToken: '',
-            expiration: new Date(),
+            accessKeyId: tipTokens.AccessKeyId,
+            secretAccessKey: tipTokens.SecretAccessKey,
+            sessionToken: tipTokens.SessionToken,
+            expiration: tipTokens.Expiration,
         };
     };
 };
