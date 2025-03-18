@@ -1,13 +1,7 @@
 {
+  "extends": "@tsconfig/node18/tsconfig.json",
   "compilerOptions": {
-    "baseUrl": ".",
-    "lib": ["ES2015"],
-    "skipLibCheck": true,
-    "resolveJsonModule": true,
-    "esModuleInterop": true,
-    "noFallthroughCasesInSwitch": true,
-    "removeComments": true,
-    "useUnknownInCatchVariables": false
+    "resolveJsonModule": true
   },
   "include": ["src/"],
   "exclude": ["node_modules/", "**/*.spec.ts"]

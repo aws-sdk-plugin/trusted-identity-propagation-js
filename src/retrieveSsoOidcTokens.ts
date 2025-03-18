@@ -19,8 +19,7 @@ export const retrieveSsoOidcTokens = async ({
     ssoOidcRefreshToken,
     applicationArn,
 }: RetrieveSsoOidcTokensParameters): Promise<CreateTokenWithIAMResponse> => {
-    let refreshTokenExpired = false;
-    let idcTokens: CreateTokenWithIAMResponse;
+    let idcTokens: CreateTokenWithIAMResponse | undefined;
 
     if (ssoOidcRefreshToken) {
         try {
@@ -32,15 +31,13 @@ export const retrieveSsoOidcTokens = async ({
                 })
             );
         } catch (error) {
-            if (error instanceof ExpiredTokenException) {
-                refreshTokenExpired = true;
-            } else {
+            if (!(error instanceof ExpiredTokenException)) {
                 throw error;
             }
         }
     }
 
-    if (!ssoOidcRefreshToken || refreshTokenExpired) {
+    if (!idcTokens) {
         idcTokens = await ssoOidcClient.send(
             new CreateTokenWithIAMCommand({
                 clientId: applicationArn,

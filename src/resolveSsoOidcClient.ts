@@ -2,6 +2,7 @@ import { SSOOIDCClient } from '@aws-sdk/client-sso-oidc';
 import { AssumeRoleWithWebIdentityCommand, STSClient } from '@aws-sdk/client-sts';
 import type { CredentialProviderOptions } from '@aws-sdk/types';
 import { getBootstrapSessionName } from './helpers';
+import { CredentialsProviderError } from '@smithy/property-provider';
 
 export interface ResolveSsoOidcClientParameters {
     webToken: string;
@@ -25,6 +26,13 @@ export const resolveSsoOidcClient = async ({
             WebIdentityToken: webToken,
         })
     );
+
+    if (!iamTokens?.AccessKeyId || !iamTokens.SecretAccessKey || !iamTokens.SessionToken) {
+        throw new CredentialsProviderError('Failed to get credentials using AssumeRoleWithWebIdentity', {
+            logger,
+            tryNextLink: false,
+        });
+    }
 
     return new SSOOIDCClient({
         credentials: {

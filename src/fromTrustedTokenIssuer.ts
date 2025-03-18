@@ -3,7 +3,7 @@ import { STSClient } from '@aws-sdk/client-sts';
 import { AssumeRoleCommand } from '@aws-sdk/client-sts';
 import type { CredentialProviderOptions, RuntimeConfigAwsCredentialIdentityProvider } from '@aws-sdk/types';
 import { CredentialsProviderError } from '@smithy/property-provider';
-import { jwtDecode } from 'jwt-decode';
+import { type JwtPayload, jwtDecode } from 'jwt-decode';
 
 import { IDC_CONTEXT_PROVIDER_ARN, PACKAGE_NAME } from './constants';
 import { getIdentityEnhancedSessionName } from './helpers';
@@ -59,13 +59,11 @@ export const fromTrustedTokenIssuer = (
 ): RuntimeConfigAwsCredentialIdentityProvider => {
     let ssoOidcRefreshToken: string | undefined = undefined;
 
-    return async ({ callerClientConfig }) => {
-        const logger = init.logger ?? callerClientConfig.logger;
+    return async ({ callerClientConfig } = {}) => {
+        const logger = init.logger ?? callerClientConfig?.logger;
         logger?.debug(`${PACKAGE_NAME} - fromTrustedTokenIssuer`);
 
         const { webTokenProvider, applicationRoleArn, accessRoleArn, applicationArn } = init;
-        const region = await callerClientConfig.region();
-
         if (!webTokenProvider || !accessRoleArn || !applicationArn) {
             throw new CredentialsProviderError(
                 'Incomplete configuration. The fromTrustedTokenIssuer() argument hash must include ' +
@@ -74,20 +72,24 @@ export const fromTrustedTokenIssuer = (
             );
         }
 
-        let webToken: string | undefined = undefined;
-        if (!init.ssoOidcClient) {
-            webToken = await webTokenProvider();
+        const region = await callerClientConfig?.region();
+        if (!region) {
+            throw new CredentialsProviderError('Region not found', { logger, tryNextLink: false });
         }
 
-        const ssoOidcClient =
-            init.ssoOidcClient ||
-            (await resolveSsoOidcClient({
+        let webToken: string | undefined = undefined;
+        let ssoOidcClient = init.ssoOidcClient;
+
+        if (!ssoOidcClient) {
+            webToken = await webTokenProvider();
+            ssoOidcClient = await resolveSsoOidcClient({
                 webToken,
                 applicationRoleArn: applicationRoleArn || accessRoleArn,
                 applicationArn,
                 region,
                 logger,
-            }));
+            });
+        }
 
         const idcTokens = await retrieveSsoOidcTokens({
             webTokenProvider: async () => webToken || webTokenProvider(),
@@ -95,11 +97,14 @@ export const fromTrustedTokenIssuer = (
             ssoOidcRefreshToken,
             applicationArn,
         });
+        if (!idcTokens.idToken) {
+            throw new CredentialsProviderError('Identity token not found', { logger, tryNextLink: false });
+        }
 
         ssoOidcRefreshToken = idcTokens.refreshToken;
 
         // TODO: To be removed. We are going to get `sts:identity_context` from the response of `CreateTokenWithIAM`.
-        const parsedIdcTokens = jwtDecode(idcTokens.idToken);
+        const parsedIdcTokens = jwtDecode<JwtPayload & { 'sts:identity_context': string }>(idcTokens.idToken);
 
         const stsClient =
             init.stsClient ||
@@ -121,6 +126,13 @@ export const fromTrustedTokenIssuer = (
                 ],
             })
         );
+
+        if (!tipTokens?.AccessKeyId || !tipTokens.SecretAccessKey || !tipTokens.SessionToken) {
+            throw new CredentialsProviderError('Failed to get credentials using AssumeRole', {
+                logger,
+                tryNextLink: false,
+            });
+        }
 
         return {
             accessKeyId: tipTokens.AccessKeyId,

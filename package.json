@@ -41,6 +41,7 @@
     "@aws-sdk/types": "^3.0.0",
     "@biomejs/biome": "1.9.4",
     "@faker-js/faker": "^9.5.0",
+    "@tsconfig/node18": "^18.2.4",
     "jsonwebtoken": "^9.0.2",
     "typescript": "^5.7.3",
     "vitest": "^3.0.8"
