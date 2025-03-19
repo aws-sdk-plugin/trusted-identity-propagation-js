@@ -14,7 +14,8 @@
     "lint": "biome lint --write",
     "format": "biome format --write",
     "test": "vitest run",
-    "test:watch": "vitest watch"
+    "test:watch": "vitest watch",
+    "e2e": "echo 'OK'"
   },
   "keywords": [
     "aws",
