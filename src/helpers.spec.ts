@@ -18,7 +18,7 @@ describe('getBootstrapSessionName', () => {
         const applicationArn = generateApplicationArn(applicationId);
         const result = getBootstrapSessionName(applicationArn);
 
-        expect(result).toEqual(`TIPSDKPluginSession-${applicationId}`);
+        expect(result).toEqual(`TrustedIdentityPropagationSDKPlugin-${applicationId}`);
     });
 });
 
@@ -28,6 +28,6 @@ describe('getIdentityEnhancedSessionName', () => {
         const applicationArn = generateApplicationArn(applicationId);
         const result = getIdentityEnhancedSessionName(applicationArn);
 
-        expect(result).toEqual(`TIPSDKPluginIdentityEnhancedSession-${applicationId}`);
+        expect(result).toEqual(`TrustedIdentityPropagationSDKPluginEnhanced-${applicationId}`);
     });
 });

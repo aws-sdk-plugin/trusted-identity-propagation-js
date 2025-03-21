@@ -8,9 +8,9 @@ export const getAppplicationIdFromArn = (applicationArn: string) => {
 };
 
 export const getBootstrapSessionName = (applicationArn: string) => {
-    return `TIPSDKPluginSession-${getAppplicationIdFromArn(applicationArn)}`;
+    return `TrustedIdentityPropagationSDKPlugin-${getAppplicationIdFromArn(applicationArn)}`;
 };
 
 export const getIdentityEnhancedSessionName = (applicationArn: string) => {
-    return `TIPSDKPluginIdentityEnhancedSession-${getAppplicationIdFromArn(applicationArn)}`;
+    return `TrustedIdentityPropagationSDKPluginEnhanced-${getAppplicationIdFromArn(applicationArn)}`;
 };
