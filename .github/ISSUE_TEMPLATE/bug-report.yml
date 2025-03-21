@@ -33,7 +33,7 @@ body:
     id: plugin-version
     attributes:
       label: Plugin version number
-      value: "@aws-sdk-plugin/trusted-identity-propagation-js@version"
+      value: "@aws-sdk-extension/trusted-identity-propagation@version"
     validations:
       required: true
 

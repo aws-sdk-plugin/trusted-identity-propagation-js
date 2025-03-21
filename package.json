@@ -1,5 +1,5 @@
 {
-  "name": "@aws-sdk-plugin/trusted-identity-propagation-js",
+  "name": "@aws-sdk-extension/trusted-identity-propagation",
   "version": "1.0.0-alpha",
   "description": "AWS credential provider that sources credentials that obtains identity-aware credentials for trusted identity propagation",
   "main": "./dist-cjs/index.js",
