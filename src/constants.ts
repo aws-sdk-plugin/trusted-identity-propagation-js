@@ -7,3 +7,7 @@ export const REFRESH_TOKEN_GRANT = 'refresh_token';
 export const IDC_CONTEXT_PROVIDER_ARN = 'arn:aws:iam::aws:contextProvider/IdentityCenter';
 
 export const PACKAGE_NAME = pkg.name;
+export const PACKAGE_VERSION = pkg.version;
+
+export const PLUGIN_METRIC_PREFIX = 'p';
+export const PLUGIN_METRIC_LABEL = 'aws-tip';

@@ -1,11 +1,21 @@
 import type { SSOOIDCClient } from '@aws-sdk/client-sso-oidc';
 import { STSClient } from '@aws-sdk/client-sts';
 import { AssumeRoleCommand } from '@aws-sdk/client-sts';
-import type { CredentialProviderOptions, RuntimeConfigAwsCredentialIdentityProvider } from '@aws-sdk/types';
+import type {
+    CredentialProviderOptions,
+    RuntimeConfigAwsCredentialIdentityProvider,
+    UserAgentPair,
+} from '@aws-sdk/types';
 import { CredentialsProviderError } from '@smithy/property-provider';
 import { type JwtPayload, jwtDecode } from 'jwt-decode';
 
-import { IDC_CONTEXT_PROVIDER_ARN, PACKAGE_NAME } from './constants';
+import {
+    IDC_CONTEXT_PROVIDER_ARN,
+    PACKAGE_NAME,
+    PACKAGE_VERSION,
+    PLUGIN_METRIC_LABEL,
+    PLUGIN_METRIC_PREFIX,
+} from './constants';
 import { getIdentityEnhancedSessionName } from './helpers';
 import { resolveSsoOidcClient } from './resolveSsoOidcClient';
 import { retrieveSsoOidcTokens } from './retrieveSsoOidcTokens';
@@ -84,6 +94,11 @@ export const fromTrustedTokenIssuer = (
             throw new CredentialsProviderError('Region not found', { logger, tryNextLink: false });
         }
 
+        const pluginUserAgentSegment: UserAgentPair = [
+            PLUGIN_METRIC_PREFIX,
+            `${PLUGIN_METRIC_LABEL}#${PACKAGE_VERSION}`,
+        ];
+
         let webToken: string | undefined = undefined;
         let ssoOidcClient = init.ssoOidcClient;
 
@@ -97,6 +112,8 @@ export const fromTrustedTokenIssuer = (
                 logger,
             });
         }
+        ssoOidcClient.config.customUserAgent ??= [];
+        ssoOidcClient.config.customUserAgent.push(pluginUserAgentSegment);
 
         const idcTokens = await retrieveSsoOidcTokens({
             webTokenProvider: async () => webToken || webTokenProvider(),
@@ -120,6 +137,8 @@ export const fromTrustedTokenIssuer = (
                 region,
                 logger,
             });
+        stsClient.config.customUserAgent ??= [];
+        stsClient.config.customUserAgent.push(pluginUserAgentSegment);
 
         const { Credentials: tipTokens } = await stsClient.send(
             new AssumeRoleCommand({
