@@ -2,6 +2,7 @@ import { CreateTokenWithIAMCommandOutput, CreateTokenWithIAMResponse, SSOOIDCCli
 import { AssumeRoleCommandOutput, AssumeRoleWithWebIdentityCommandOutput, STSClient } from '@aws-sdk/client-sts';
 import { vi } from 'vitest';
 
+import * as fromTrustedTokenIssuer from '../src/fromTrustedTokenIssuer';
 import * as resolveSsoOidcClient from '../src/resolveSsoOidcClient';
 import * as retrieveSsoOidcTokens from '../src/retrieveSsoOidcTokens';
 
@@ -59,4 +60,8 @@ export const mockSsoOidcClientOutputs = (overrides: MockedSsoOidcCommandOutputs 
         }
         return overrides[commandName]();
     });
+};
+
+export const mockFromTrustedTokenIssuer = (override = vi.fn()) => {
+    return vi.spyOn(fromTrustedTokenIssuer, 'fromTrustedTokenIssuer').mockReturnValue(override);
 };

@@ -1,1 +1,1 @@
-export * from './fromTrustedTokenIssuer';
+export * from './trustedIdentityPropagationExtension';
