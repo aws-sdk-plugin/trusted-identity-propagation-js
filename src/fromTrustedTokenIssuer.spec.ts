@@ -30,6 +30,7 @@ vi.mock('@aws-sdk/client-sts', async (importOriginal) => ({
     AssumeRoleCommand: vi.fn().mockName('AssumeRoleCommand'),
 }));
 
+const region = 'us-east-1';
 const webToken = generateIdentityToken();
 const webTokenProvider = vi.fn().mockResolvedValue(webToken);
 const applicationRoleArn = generateRoleArn();
@@ -37,10 +38,9 @@ const accessRoleArn = generateRoleArn();
 const applicationArn = generateApplicationArn();
 
 const callerClientConfig: AwsIdentityProperties['callerClientConfig'] = {
-    region: () => Promise.resolve('us-east-1'),
+    region: () => Promise.resolve(region),
 };
 
-const region = 'us-east-1';
 const ssoOidcClient = new SSOOIDCClient({
     region,
     credentials: generateSdkCredentials('lowercase'),
@@ -83,6 +83,42 @@ describe('fromTrustedTokenIssuer', () => {
                 'Incomplete configuration. The fromTrustedTokenIssuer() argument hash must include "webTokenProvider", "accessRoleArn", "applicationArn"'
             );
         });
+    });
+
+    it('uses region from parameters if provided', async () => {
+        const region = 'us-west-2';
+
+        await fromTrustedTokenIssuer({
+            webTokenProvider,
+            applicationRoleArn,
+            accessRoleArn,
+            applicationArn,
+            region: () => Promise.resolve(region),
+        })({ callerClientConfig });
+
+        expect(resolveSsoOidcClient).toHaveBeenCalledWith(expect.objectContaining({ region }));
+    });
+
+    it('uses region from callerClientConfig if "region" is not provided', async () => {
+        await fromTrustedTokenIssuer({
+            webTokenProvider,
+            applicationRoleArn,
+            accessRoleArn,
+            applicationArn,
+        })({ callerClientConfig });
+
+        expect(resolveSsoOidcClient).toHaveBeenCalledWith(expect.objectContaining({ region }));
+    });
+
+    it('throws error if region cannot be determined', async () => {
+        await expect(() =>
+            fromTrustedTokenIssuer({
+                webTokenProvider,
+                applicationRoleArn,
+                accessRoleArn,
+                applicationArn,
+            })()
+        ).rejects.toThrow('Region not found');
     });
 
     it('calls "resolveSsoOidcClient" if "ssoOidcClient" is not provided', async () => {

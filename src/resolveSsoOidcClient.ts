@@ -1,8 +1,8 @@
 import { SSOOIDCClient } from '@aws-sdk/client-sso-oidc';
 import { AssumeRoleWithWebIdentityCommand, STSClient } from '@aws-sdk/client-sts';
 import type { CredentialProviderOptions } from '@aws-sdk/types';
-import { getBootstrapSessionName } from './helpers';
 import { CredentialsProviderError } from '@smithy/property-provider';
+import { getBootstrapSessionName } from './helpers';
 
 export interface ResolveSsoOidcClientParameters {
     webToken: string;

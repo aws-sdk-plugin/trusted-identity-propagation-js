@@ -52,6 +52,13 @@ export interface FromTrustedTokenIssuerProps extends CredentialProviderOptions {
      * STS client usin default configurations will be instantiated and used.
      */
     stsClient?: STSClient;
+
+    /**
+     * A function that returns the region used to initialize the parent SDK
+     * client, and will be used to initialize other SDK clients. This will be
+     * passed automatically from the parent SDK client configuration.
+     */
+    region?: () => Promise<string>;
 }
 
 export const fromTrustedTokenIssuer = (
@@ -72,7 +79,7 @@ export const fromTrustedTokenIssuer = (
             );
         }
 
-        const region = await callerClientConfig?.region();
+        const region = (await init.region?.()) ?? (await callerClientConfig?.region());
         if (!region) {
             throw new CredentialsProviderError('Region not found', { logger, tryNextLink: false });
         }
