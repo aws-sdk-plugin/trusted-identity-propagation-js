@@ -1,8 +1,9 @@
+import { JsonWebKeyInput, generateKeyPairSync } from 'node:crypto';
 import { CreateTokenWithIAMResponse } from '@aws-sdk/client-sso-oidc';
 import { faker } from '@faker-js/faker';
 import jwt from 'jsonwebtoken';
 
-import { REFRESH_TOKEN_GRANT_URI } from '../src/constants';
+import { REFRESH_TOKEN_TYPE_URI } from '../src/constants';
 
 export const generateAccountId = () => {
     return faker.string.fromCharacters('0123456789', 12);
@@ -70,9 +71,58 @@ export const generateOidcTokens = (identityContext?: string): CreateTokenWithIAM
             },
             faker.string.alphanumeric(24)
         ),
-        issuedTokenType: REFRESH_TOKEN_GRANT_URI,
+        issuedTokenType: REFRESH_TOKEN_TYPE_URI,
         refreshToken: faker.string.alphanumeric(24),
         scope: ['sts:identity_context', 'openid', 'aws'],
         tokenType: 'Bearer',
     };
+};
+
+interface IntegrationTestEnvironment {
+    Region: string;
+    ApplicationRoleArn: string;
+    AccessRoleArn: string;
+    IdcApplicationArn: string;
+    IdcUserName: string;
+    IdpIssuerUrl: string;
+    IdpAudience: string;
+    IdpSubject: string;
+    IdpKeyId: string;
+}
+
+export const getIntegrationTestEnvironment = (): IntegrationTestEnvironment => {
+    return JSON.parse(process.env.INTEGRATION_TEST_VARIABLES || '{}');
+};
+
+export const getIntegrationTestPrivateKey = (): JsonWebKeyInput => {
+    return {
+        format: 'jwk',
+        key: JSON.parse(process.env.INTEGRATION_TEST_PRIVATE_KEY || '{}'),
+    };
+};
+
+export const getInvalidPrivateKey = () => {
+    return generateKeyPairSync('rsa', {
+        modulusLength: 4096,
+        publicKeyEncoding: {
+            type: 'spki',
+            format: 'pem',
+        },
+        privateKeyEncoding: {
+            type: 'pkcs8',
+            format: 'pem',
+        },
+    }).privateKey;
+};
+
+export const generateWebToken = (env: IntegrationTestEnvironment, privateKey: JsonWebKeyInput | string) => {
+    return jwt.sign({ userName: env.IdcUserName }, privateKey, {
+        algorithm: 'RS256',
+        keyid: env.IdpKeyId,
+        jwtid: faker.string.alpha(10),
+        issuer: env.IdpIssuerUrl,
+        audience: env.IdpAudience,
+        subject: env.IdpSubject,
+        expiresIn: '1h',
+    });
 };

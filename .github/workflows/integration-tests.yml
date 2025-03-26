@@ -11,6 +11,9 @@ on:
 jobs:
   integration-tests:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
 
     strategy:
       matrix:
@@ -22,6 +25,19 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
           cache: "npm"
+      - name: configure credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          audience: sts.amazonaws.com
+          aws-region: us-east-1
+          role-to-assume: ${{ secrets.ACTIONS_EXECUTION_ROLE }}
+          role-session-name: IntegrationTests
+      - name: fetch environment variables
+        uses: aws-actions/aws-secretsmanager-get-secrets@v2
+        with:
+          secret-ids: |
+            INTEGRATION_TEST_VARIABLES, TestEnvironmentVariables
+            INTEGRATION_TEST_PRIVATE_KEY, IdentityProviderPrivateKey
       - name: install
         run:  npm ci
       - name: test
