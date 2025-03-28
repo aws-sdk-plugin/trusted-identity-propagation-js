@@ -7,7 +7,6 @@ import type {
     UserAgentPair,
 } from '@aws-sdk/types';
 import { CredentialsProviderError } from '@smithy/property-provider';
-import { type JwtPayload, jwtDecode } from 'jwt-decode';
 
 import {
     IDC_CONTEXT_PROVIDER_ARN,
@@ -121,14 +120,11 @@ export const fromTrustedTokenIssuer = (
             ssoOidcRefreshToken,
             applicationArn,
         });
-        if (!idcTokens.idToken) {
-            throw new CredentialsProviderError('Identity token not found', { logger, tryNextLink: false });
+        if (!idcTokens.awsAdditionalDetails?.identityContext) {
+            throw new CredentialsProviderError('Identity context not found', { logger, tryNextLink: false });
         }
 
         ssoOidcRefreshToken = idcTokens.refreshToken;
-
-        // TODO: To be removed. We are going to get `sts:identity_context` from the response of `CreateTokenWithIAM`.
-        const parsedIdcTokens = jwtDecode<JwtPayload & { 'sts:identity_context': string }>(idcTokens.idToken);
 
         const stsClient =
             init.stsClient ||
@@ -147,7 +143,7 @@ export const fromTrustedTokenIssuer = (
                 ProvidedContexts: [
                     {
                         ProviderArn: IDC_CONTEXT_PROVIDER_ARN,
-                        ContextAssertion: parsedIdcTokens['sts:identity_context'],
+                        ContextAssertion: idcTokens.awsAdditionalDetails.identityContext,
                     },
                 ],
             })

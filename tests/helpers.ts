@@ -56,14 +56,17 @@ export const lowercaseSdkCredential = (credentials: UppercaseSdkCredentials): Lo
     };
 };
 
-export const generateOidcTokens = (identityContext?: string): CreateTokenWithIAMResponse => {
+export const generateOidcTokens = (
+    identityContext: string = faker.string.alphanumeric(100)
+): CreateTokenWithIAMResponse => {
     const now = new Date().getTime();
+
     return {
         accessToken: faker.string.alphanumeric(24),
         expiresIn: 3600,
         idToken: jwt.sign(
             {
-                'sts:identity_context': identityContext || faker.string.alphanumeric(100),
+                'sts:identity_context': identityContext,
                 sub: faker.string.uuid(),
                 iss: faker.internet.url(),
                 exp: new Date(now + 60 * 1000).getTime(), // expire in 60 seconds
@@ -75,6 +78,9 @@ export const generateOidcTokens = (identityContext?: string): CreateTokenWithIAM
         refreshToken: faker.string.alphanumeric(24),
         scope: ['sts:identity_context', 'openid', 'aws'],
         tokenType: 'Bearer',
+        awsAdditionalDetails: {
+            identityContext: identityContext,
+        },
     };
 };
 
