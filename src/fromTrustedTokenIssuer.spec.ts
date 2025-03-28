@@ -85,21 +85,7 @@ describe('fromTrustedTokenIssuer', () => {
         });
     });
 
-    it('uses region from parameters if provided', async () => {
-        const region = 'us-west-2';
-
-        await fromTrustedTokenIssuer({
-            webTokenProvider,
-            applicationRoleArn,
-            accessRoleArn,
-            applicationArn,
-            region: () => Promise.resolve(region),
-        })({ callerClientConfig });
-
-        expect(resolveSsoOidcClient).toHaveBeenCalledWith(expect.objectContaining({ region }));
-    });
-
-    it('uses region from callerClientConfig if "region" is not provided', async () => {
+    it('uses region from callerClientConfig', async () => {
         await fromTrustedTokenIssuer({
             webTokenProvider,
             applicationRoleArn,

@@ -7,25 +7,18 @@ interface ExtensionConfiguration {
     region(): () => Promise<string>;
 }
 
-type ExtensionInitProps = Omit<FromTrustedTokenIssuerProps, 'region'>;
-
 export class TrustedIdentityPropagationExtension {
-    private readonly configuration: ExtensionInitProps;
+    private readonly configuration: FromTrustedTokenIssuerProps;
 
-    private constructor(configuration: ExtensionInitProps) {
+    private constructor(configuration: FromTrustedTokenIssuerProps) {
         this.configuration = configuration;
     }
 
-    static create(configuration: ExtensionInitProps) {
+    static create(configuration: FromTrustedTokenIssuerProps) {
         return new TrustedIdentityPropagationExtension(configuration);
     }
 
     configure(extensionConfiguration: ExtensionConfiguration) {
-        extensionConfiguration.setCredentials(
-            fromTrustedTokenIssuer({
-                ...this.configuration,
-                region: extensionConfiguration.region(),
-            })
-        );
+        extensionConfiguration.setCredentials(fromTrustedTokenIssuer(this.configuration));
     }
 }
