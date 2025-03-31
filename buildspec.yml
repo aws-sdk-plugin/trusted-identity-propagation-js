@@ -1,0 +1,21 @@
+version: 0.2
+
+env:
+  secrets-manager:
+    NPM_ACCESS_TOKEN: PackageRegistryAccessToken:accessToken
+
+phases:
+  install:
+    runtime-versions:
+      nodejs: 18.x
+    commands:
+      - npm install
+
+  pre_build:
+    commands:
+      - npm config set //registry.npmjs.org/:_authToken=$NPM_ACCESS_TOKEN
+
+  build:
+    commands:
+      - npm run build
+      - npm publish --access public
