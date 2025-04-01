@@ -60,16 +60,16 @@ npm run build
 npm pack
 ```
 
-This will create an archive file named something like `aws-sdk-extension-trusted-identity-propagation-0.0.1.tgz`. The version number at the end changes based on the current version of the plugin.
+This will create an archive file named something like `aws-sdk-extension-trusted-identity-propagation-1.0.0.tgz`. The version number at the end changes based on the current version of the plugin.
 
 4. Change directory to the project you are working on and move the archive file to the location to store the vendor packages
 ```bash
-mv path/to/trusted-identity-propagation-js/aws-sdk-extension-trusted-identity-propagation-0.0.1.tgz ./path/to/vendors/folder
+mv path/to/trusted-identity-propagation-js/aws-sdk-extension-trusted-identity-propagation-1.0.0.tgz ./path/to/vendors/folder
 ```
 
 5. Install the package to your project
 ```bash
-npm install ./path/to/vendors/folder/aws-sdk-extension-trusted-identity-propagation-0.0.1.tgz
+npm install ./path/to/vendors/folder/aws-sdk-extension-trusted-identity-propagation-1.0.0.tgz
 ```
 
 ## Node.js versions
