@@ -2,7 +2,7 @@
 
 Trusted identity propagation enables AWS services to grant permissions based on user attributes such as group associations, add context to an IAM role identifying the user requesting access to AWS resources, and propagate this context to other AWS services.
 
-This plugin provides the functionality to exchange an ID token issued by a trusted token issuer for an IAM Identity Center token and pass it to AWS Services (e.g., AWS S3, Amazon Q) that use it to make authorization decisions.
+This plugin provides the functionality to exchange an Id token issued by a trusted token issuer for an IAM Identity Center token and pass it to AWS services (e.g., AWS S3, Amazon Q) that use it to make authorization decisions.
 
 ## Installation
 
