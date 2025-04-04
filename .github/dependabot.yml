@@ -10,11 +10,3 @@ updates:
     directory: "/" # Location of package manifests
     schedule:
       interval: "monthly"
-  - package-ecosystem: "aws-sdk/client-sso-oidc"
-    directory: "/"
-    schedule:
-      interval: "monthly"
-  - package-ecosystem: "aws-sdk/client-sts"
-    directory: "/"
-    schedule:
-      interval: "monthly"
