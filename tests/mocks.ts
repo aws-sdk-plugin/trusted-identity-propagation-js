@@ -1,17 +1,21 @@
 import { CreateTokenWithIAMCommandOutput, CreateTokenWithIAMResponse, SSOOIDCClient } from '@aws-sdk/client-sso-oidc';
-import { AssumeRoleCommandOutput, AssumeRoleWithWebIdentityCommandOutput, STSClient } from '@aws-sdk/client-sts';
+import { AssumeRoleCommandOutput, AssumeRoleWithWebIdentityCommandOutput, STSClient, Credentials } from '@aws-sdk/client-sts';
+import type { AwsCredentialIdentity } from '@aws-sdk/types';
 import { vi } from 'vitest';
 
 import * as fromTrustedTokenIssuer from '../src/fromTrustedTokenIssuer';
 import * as resolveSsoOidcClient from '../src/resolveSsoOidcClient';
+import * as retrieveCredentialsWithWebIdentity from '../src/retrieveCredentialsWithWebIdentity';
 import * as retrieveSsoOidcTokens from '../src/retrieveSsoOidcTokens';
 
 const testRegion = 'us-east-1';
 
-export const mockResolveSsoOidcClient = () => {
+export const mockRetrieveCredentialsWithWebIdentity = () => {
     return vi
-        .spyOn(resolveSsoOidcClient, 'resolveSsoOidcClient')
-        .mockResolvedValue(new SSOOIDCClient({ region: testRegion }));
+        .spyOn(retrieveCredentialsWithWebIdentity, 'retrieveCredentialsWithWebIdentity')
+        .mockResolvedValue({ accessKeyId: 'mockAccessKeyId',
+                             secretAccessKey: 'mockSecretAccessKey',
+                             sessionToken: 'mockSessionToken' });
 };
 
 export const mockRetrieveSsoOidcTokens = (tokens: CreateTokenWithIAMResponse) => {

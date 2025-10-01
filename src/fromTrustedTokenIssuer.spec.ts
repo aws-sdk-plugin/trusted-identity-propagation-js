@@ -1,5 +1,5 @@
 import { SSOOIDCClient } from '@aws-sdk/client-sso-oidc';
-import { AssumeRoleCommand } from '@aws-sdk/client-sts';
+import { STSClient, AssumeRoleCommand } from '@aws-sdk/client-sts';
 import type { AwsIdentityProperties } from '@aws-sdk/types';
 import { faker } from '@faker-js/faker';
 import { type MockInstance, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -13,7 +13,7 @@ import {
     lowercaseSdkCredential,
 } from '../tests/helpers';
 import {
-    mockResolveSsoOidcClient,
+    mockRetrieveCredentialsWithWebIdentity,
     mockRetrieveSsoOidcTokens,
     mockSsoOidcClientOutputs,
     mockStsClientOutputs,
@@ -46,18 +46,23 @@ const ssoOidcClient = new SSOOIDCClient({
     credentials: generateSdkCredentials('lowercase'),
 });
 
+const stsClient = new STSClient({
+    region,
+    credentials: generateSdkCredentials('lowercase'),
+});
+
 describe('fromTrustedTokenIssuer', () => {
     const bootstrapCredentials = generateSdkCredentials('uppercase');
     const identityContext = faker.string.alphanumeric(100);
     const oidcTokens = generateOidcTokens(identityContext);
     const identityEnhancedCredentials = generateSdkCredentials('uppercase');
 
-    let resolveSsoOidcClient: MockInstance;
+    let retrieveCredentialsWithWebIdentity: MockInstance;
 
     beforeEach(() => {
         vi.clearAllMocks();
 
-        resolveSsoOidcClient = mockResolveSsoOidcClient();
+        retrieveCredentialsWithWebIdentity = mockRetrieveCredentialsWithWebIdentity();
 
         mockStsClientOutputs({
             AssumeRoleWithWebIdentityCommand: () => ({ Credentials: bootstrapCredentials }),
@@ -85,6 +90,58 @@ describe('fromTrustedTokenIssuer', () => {
         });
     });
 
+    it('throws error if both applicationRoleArn, ssoOidcClient and ssoOidcClient is not provided', async () => {
+        const config: FromTrustedTokenIssuerProps = {
+            webTokenProvider,
+            accessRoleArn,
+            applicationArn,
+            stsClient,
+        };
+
+        await expect(() => fromTrustedTokenIssuer(config)({ callerClientConfig })).rejects.toThrow(
+            'Either both of ssoOidcClient and stsClient OR the application role must be provided.'
+        );
+    });
+
+    it('throws error if both applicationRoleArn and ssoOidcClient is not provided', async () => {
+        const config: FromTrustedTokenIssuerProps = {
+            webTokenProvider,
+            accessRoleArn,
+            applicationArn,
+            stsClient,
+        };
+
+        await expect(() => fromTrustedTokenIssuer(config)({ callerClientConfig })).rejects.toThrow(
+            'Either both of ssoOidcClient and stsClient OR the application role must be provided.'
+        );
+    });
+
+    it('throws error if both applicationRoleArn and stsClient is not provided', async () => {
+        const config: FromTrustedTokenIssuerProps = {
+            webTokenProvider,
+            accessRoleArn,
+            applicationArn,
+            ssoOidcClient,
+        };
+
+        await expect(() => fromTrustedTokenIssuer(config)({ callerClientConfig })).rejects.toThrow(
+            'Either both of ssoOidcClient and stsClient OR the application role must be provided.'
+        );
+    });
+
+    it('throws error if both applicationRoleArn and accessRoleArn are same', async () => {
+        const config: FromTrustedTokenIssuerProps = {
+            webTokenProvider,
+            applicationRoleArn: accessRoleArn,
+            accessRoleArn,
+            applicationArn,
+        };
+
+        await expect(() => fromTrustedTokenIssuer(config)({ callerClientConfig })).rejects.toThrow(
+            'Access Role and Application Role can not be same as it leads to self role assumption.'
+        );
+    });
+
     it('uses region from callerClientConfig', async () => {
         await fromTrustedTokenIssuer({
             webTokenProvider,
@@ -93,7 +150,7 @@ describe('fromTrustedTokenIssuer', () => {
             applicationArn,
         })({ callerClientConfig });
 
-        expect(resolveSsoOidcClient).toHaveBeenCalledWith(expect.objectContaining({ region }));
+        expect(retrieveCredentialsWithWebIdentity).toHaveBeenCalledWith(expect.objectContaining({ region }));
     });
 
     it('throws error if region cannot be determined', async () => {
@@ -107,7 +164,7 @@ describe('fromTrustedTokenIssuer', () => {
         ).rejects.toThrow('Region not found');
     });
 
-    it('calls "resolveSsoOidcClient" if "ssoOidcClient" is not provided', async () => {
+    it('calls "retrieveCredentialsWithWebIdentity" if "ssoOidcClient" is not provided', async () => {
         await fromTrustedTokenIssuer({
             webTokenProvider,
             applicationRoleArn,
@@ -115,7 +172,7 @@ describe('fromTrustedTokenIssuer', () => {
             applicationArn,
         })({ callerClientConfig });
 
-        expect(resolveSsoOidcClient).toHaveBeenCalledWith(
+        expect(retrieveCredentialsWithWebIdentity).toHaveBeenCalledWith(
             expect.objectContaining({
                 webToken,
                 applicationRoleArn,
@@ -138,6 +195,7 @@ describe('fromTrustedTokenIssuer', () => {
 
         await fromTrustedTokenIssuer({
             webTokenProvider,
+            applicationRoleArn,
             accessRoleArn,
             applicationArn,
         })({ callerClientConfig });
@@ -151,6 +209,7 @@ describe('fromTrustedTokenIssuer', () => {
             accessRoleArn,
             applicationArn,
             ssoOidcClient,
+            stsClient,
         })({ callerClientConfig });
 
         expect(webTokenProvider).toHaveBeenCalledOnce();
@@ -162,6 +221,7 @@ describe('fromTrustedTokenIssuer', () => {
             accessRoleArn,
             applicationArn,
             ssoOidcClient,
+            stsClient,
         });
 
         /**
@@ -183,6 +243,7 @@ describe('fromTrustedTokenIssuer', () => {
 
         await fromTrustedTokenIssuer({
             webTokenProvider,
+            applicationRoleArn,
             accessRoleArn,
             applicationArn,
         })({ callerClientConfig });
@@ -203,6 +264,7 @@ describe('fromTrustedTokenIssuer', () => {
 
         const provider = fromTrustedTokenIssuer({
             webTokenProvider,
+            applicationRoleArn,
             accessRoleArn,
             applicationArn,
         });
@@ -231,6 +293,7 @@ describe('fromTrustedTokenIssuer', () => {
     it('calls "AssumeRole" with the "accessRoleArn" parameter and the user identity context assertion', async () => {
         await fromTrustedTokenIssuer({
             webTokenProvider,
+            applicationRoleArn,
             accessRoleArn,
             applicationArn,
         })({ callerClientConfig });
@@ -252,6 +315,7 @@ describe('fromTrustedTokenIssuer', () => {
     it('returns identity-enhanced session with expiration from the "AssumeRole" response', async () => {
         const credentials = await fromTrustedTokenIssuer({
             webTokenProvider,
+            applicationRoleArn,
             accessRoleArn,
             applicationArn,
         })({ callerClientConfig });

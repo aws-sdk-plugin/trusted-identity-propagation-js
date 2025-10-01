@@ -1,10 +1,12 @@
-import type { SSOOIDCClient } from '@aws-sdk/client-sso-oidc';
+import { SSOOIDCClient } from '@aws-sdk/client-sso-oidc';
 import { STSClient } from '@aws-sdk/client-sts';
-import { AssumeRoleCommand } from '@aws-sdk/client-sts';
+import { AssumeRoleCommand, Credentials } from '@aws-sdk/client-sts';
 import type {
     CredentialProviderOptions,
     RuntimeConfigAwsCredentialIdentityProvider,
     UserAgentPair,
+    AwsCredentialIdentity,
+    AwsCredentialIdentityProvider,
 } from '@aws-sdk/types';
 import { CredentialsProviderError } from '@smithy/property-provider';
 
@@ -16,7 +18,7 @@ import {
     PLUGIN_METRIC_PREFIX,
 } from './constants';
 import { getIdentityEnhancedSessionName } from './helpers';
-import { resolveSsoOidcClient } from './resolveSsoOidcClient';
+import { retrieveCredentialsWithWebIdentity } from './retrieveCredentialsWithWebIdentity';
 import { retrieveSsoOidcTokens } from './retrieveSsoOidcTokens';
 
 export interface FromTrustedTokenIssuerProps extends CredentialProviderOptions {
@@ -86,24 +88,53 @@ export const fromTrustedTokenIssuer = (
             throw new CredentialsProviderError('Region not found', { logger, tryNextLink: false });
         }
 
+        let ssoOidcClient = init.ssoOidcClient;
+        let stsClient = init.stsClient;
+        let webToken: string | undefined = undefined;
+
+        if (!ssoOidcClient || !stsClient) {
+            if (!applicationRoleArn) {
+                throw new CredentialsProviderError('Either both of ssoOidcClient and stsClient OR the application role must be provided.',
+                                                    { logger, tryNextLink: false });
+            }
+
+            if (accessRoleArn === applicationRoleArn) {
+                throw new CredentialsProviderError('Access Role and Application Role can not be same as it leads to self role assumption.',
+                            { logger, tryNextLink: false });
+            }
+
+            webToken = await webTokenProvider();
+            const webIdentityCredentials: AwsCredentialIdentity = await retrieveCredentialsWithWebIdentity({
+                webToken,
+                applicationRoleArn: applicationRoleArn,
+                applicationArn,
+                region,
+                logger,
+            });
+
+            if (!ssoOidcClient) {
+                ssoOidcClient = new SSOOIDCClient({
+                    credentials: webIdentityCredentials,
+                    region,
+                    logger,
+                });
+            }
+
+            if (!stsClient) {
+                stsClient = new STSClient({
+                    credentials: webIdentityCredentials,
+                    region,
+                    logger,
+                });
+            }
+        }
+
         const pluginUserAgentSegment: UserAgentPair = [
             PLUGIN_METRIC_PREFIX,
             `${PLUGIN_METRIC_LABEL}#${PACKAGE_VERSION}`,
         ];
 
-        let webToken: string | undefined = undefined;
-        let ssoOidcClient = init.ssoOidcClient;
 
-        if (!ssoOidcClient) {
-            webToken = await webTokenProvider();
-            ssoOidcClient = await resolveSsoOidcClient({
-                webToken,
-                applicationRoleArn: applicationRoleArn || accessRoleArn,
-                applicationArn,
-                region,
-                logger,
-            });
-        }
         ssoOidcClient.config.customUserAgent ??= [];
         ssoOidcClient.config.customUserAgent.push(pluginUserAgentSegment);
 
@@ -119,13 +150,6 @@ export const fromTrustedTokenIssuer = (
 
         ssoOidcRefreshToken = idcTokens.refreshToken;
 
-        const stsClient =
-            init.stsClient ||
-            new STSClient({
-                credentials: ssoOidcClient.config.credentials,
-                region,
-                logger,
-            });
         stsClient.config.customUserAgent ??= [];
         stsClient.config.customUserAgent.push(pluginUserAgentSegment);
 
