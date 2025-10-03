@@ -1,23 +1,23 @@
 import { SSOOIDCClient } from '@aws-sdk/client-sso-oidc';
 import { AssumeRoleWithWebIdentityCommand, STSClient } from '@aws-sdk/client-sts';
-import type { CredentialProviderOptions } from '@aws-sdk/types';
+import type { AwsCredentialIdentity, CredentialProviderOptions } from '@aws-sdk/types';
 import { CredentialsProviderError } from '@smithy/property-provider';
 import { getBootstrapSessionName } from './helpers';
 
-export interface ResolveSsoOidcClientParameters {
+export interface RetrieveCredentialsWithWebIdentityParameters {
     webToken: string;
     applicationRoleArn: string;
     applicationArn: string;
     region: string;
 }
 
-export const resolveSsoOidcClient = async ({
+export const retrieveCredentialsWithWebIdentity = async ({
     webToken,
     applicationRoleArn,
     applicationArn,
     region,
     logger,
-}: ResolveSsoOidcClientParameters & CredentialProviderOptions): Promise<SSOOIDCClient> => {
+}: RetrieveCredentialsWithWebIdentityParameters & CredentialProviderOptions): Promise<AwsCredentialIdentity> => {
     const stsClient = new STSClient({ region, logger });
     const { Credentials: iamTokens } = await stsClient.send(
         new AssumeRoleWithWebIdentityCommand({
@@ -34,13 +34,11 @@ export const resolveSsoOidcClient = async ({
         });
     }
 
-    return new SSOOIDCClient({
-        credentials: {
-            accessKeyId: iamTokens.AccessKeyId,
-            secretAccessKey: iamTokens.SecretAccessKey,
-            sessionToken: iamTokens.SessionToken,
-        },
-        region,
-        logger,
-    });
+    const staticCredentials: AwsCredentialIdentity = {
+      accessKeyId: iamTokens.AccessKeyId,
+      secretAccessKey: iamTokens.SecretAccessKey,
+      sessionToken: iamTokens.SessionToken,
+    };
+
+    return staticCredentials;
 };

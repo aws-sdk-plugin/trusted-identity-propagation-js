@@ -12,6 +12,7 @@ import { TrustedIdentityPropagationExtension } from '../src/trustedIdentityPropa
 
 const env = getIntegrationTestEnvironment();
 const ssoOidcClient = new SSOOIDCClient({ region: env.Region });
+const stsClient = new STSClient({ region: env.Region });
 
 describe.concurrent('integration tests', () => {
     it('returns credentials when given a valid web token', async ({ expect }) => {
@@ -25,6 +26,7 @@ describe.concurrent('integration tests', () => {
                     accessRoleArn: env.AccessRoleArn,
                     applicationArn: env.IdcApplicationArn,
                     ssoOidcClient,
+                    stsClient,
                 }),
             ],
         });
@@ -49,6 +51,7 @@ describe.concurrent('integration tests', () => {
                     accessRoleArn: env.AccessRoleArn,
                     applicationArn: env.IdcApplicationArn,
                     ssoOidcClient,
+                    stsClient,
                 }),
             ],
         });
